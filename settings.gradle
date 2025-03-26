@@ -23,6 +23,8 @@ dependencyResolutionManagement {
 
 rootProject.name = 'monado'
 
+include ':gstreamer_java'
+
 include ':src:xrt:auxiliary'
 project(':src:xrt:auxiliary').projectDir = new File(rootDir, 'src/xrt/auxiliary/android')
 

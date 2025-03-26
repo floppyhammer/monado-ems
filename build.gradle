@@ -84,7 +84,19 @@ ext {
     // local.properties file since the default value provided below only makes sense on *nix
     eigenIncludeDir = project.findProperty('eigenIncludeDir') ?: '/usr/include/eigen3'
 
+    gstreamerBaseDir = project.findProperty('gstreamerBaseDir') ?: "${projectDir}/deps/gstreamer_android"
+    gstreamerArchDir = project.findProperty('gstreamerArchDir') ?: ''
+
     // If you're having trouble with a "can't find python" CMake error, you can specify the path to
     // Python 3 explicitly in local.properties with a property named "pythonBinary"
     pythonBinary = project.findProperty('pythonBinary')
+}
+
+if (project.gstreamerArchDir) {
+    project.ext.gstJavaDir = "${project.gstreamerArchDir}/share/gst-android/ndk-build"
+    project.ext.gstreamerCMakeArg = "-DGST_ARCH_DIR=${project.gstreamerArchDir}"
+
+} else if (project.gstreamerBaseDir) {
+    project.ext.gstJavaDir = "${project.gstreamerBaseDir}/arm64/share/gst-android/ndk-build"
+    project.ext.gstreamerCMakeArg = "-DGST_BASE_DIR=${project.gstreamerBaseDir}"
 }

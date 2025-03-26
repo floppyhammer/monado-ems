@@ -11,4 +11,4 @@ add_library(
 	)
 target_link_libraries(aux_gstreamer PUBLIC aux-includes)
 target_link_libraries(aux_gstreamer PRIVATE xrt-interfaces aux_math aux_os ${GST_LIBRARIES})
-target_include_directories(aux_gstreamer PRIVATE ${GST_INCLUDE_DIRS})
+target_include_directories(aux_gstreamer PRIVATE ${GST_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})

@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 project(
-	XRT
+	XRT-EMS
 	VERSION 24.0.0
 	LANGUAGES C CXX
 	DESCRIPTION "Monado(XRT) by Collabora et al"
@@ -218,6 +218,7 @@ option_with_deps(XRT_HAVE_OPENGLES "Enable OpenGL-ES Graphics API support" DEPEN
 
 option_with_deps(XRT_HAVE_EGL "Enable OpenGL(-ES) on EGL Graphics API support" DEPENDS EGL_FOUND "XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES")
 option_with_deps(XRT_HAVE_SDL2 "Enable use of SDL2" DEPENDS SDL2_FOUND XRT_HAVE_OPENGL)
+setForce(XRT_HAVE_SDL2 OFF)
 
 option_with_deps(XRT_HAVE_DXGI "Use DXGI APIs for some Windows-specific functionality" DEPENDS DXGI_LIBRARY)
 option_with_deps(XRT_HAVE_WIL "Use WIL for Windows-specific functionality" DEPENDS wil_FOUND)
@@ -304,7 +305,8 @@ option_with_deps(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path t
 
 # Driver deps to use (sorted, though there are some internal dependencies)
 option_with_deps(XRT_HAVE_BLUETOOTH "Enable Bluetooth (legacy, non-ble)" DEPENDS BLUETOOTH_FOUND)
-option_with_deps(XRT_HAVE_GST "Enable gstreamer" DEPENDS GST_FOUND)
+#option_with_deps(XRT_HAVE_GST "Enable gstreamer" DEPENDS GST_FOUND)
+option(XRT_HAVE_GST "Enable gstreamer" ON)
 option_with_deps(XRT_HAVE_HIDAPI "Enable libhidapi (used for PSVR)" DEPENDS HIDAPI_FOUND)
 option_with_deps(XRT_HAVE_JPEG "Enable jpeg code (used for some video drivers)" DEPENDS JPEG_FOUND)
 option_with_deps(XRT_HAVE_LIBUSB "Enable libusb (used for most drivers)" DEPENDS LIBUSB1_FOUND)
@@ -338,12 +340,14 @@ option_with_deps(XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE "Enable SteamVR Lighthouse 
 option_with_deps(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" DEPENDS SURVIVE_FOUND XRT_MODULE_AUX_VIVE)
 option_with_deps(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" DEPENDS LeapV2_FOUND)
 option_with_deps(XRT_BUILD_DRIVER_ULV5 "Enable Ultraleap v5 driver" DEPENDS LeapSDK_FOUND)
-option_with_deps(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" DEPENDS XRT_HAVE_GST)
+#option_with_deps(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" DEPENDS XRT_HAVE_GST)
+option(XRT_BUILD_DRIVER_VF "Enable North Star driver" OFF)
 option_with_deps(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" DEPENDS ZLIB_FOUND XRT_HAVE_LINUX XRT_MODULE_AUX_VIVE)
 option_with_deps(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" DEPENDS LINUX)
 option_with_deps(XRT_BUILD_DRIVER_XREAL_AIR "Enable Xreal Air HMD driver" DEPENDS XRT_HAVE_HIDAPI)
 option_with_deps(XRT_BUILD_DRIVER_SIMULAVR "Enable simula driver" DEPENDS XRT_HAVE_REALSENSE)
 option(XRT_BUILD_DRIVER_SIMULATED "Enable simulated driver" ON)
+option(XRT_BUILD_DRIVER_EMS "Enable Electric Maple server" ON)
 
 option(XRT_BUILD_SAMPLES "Enable compiling sample code implementations that will not be linked into any final targets" ON)
 set(XRT_IPC_MSG_SOCK_FILENAME monado_comp_ipc CACHE STRING "Service socket filename")
@@ -403,6 +407,43 @@ option(XRT_FEATURE_OPENXR_SPACE_UNBOUNDED "Enable XR_MSFT_unbounded_reference_sp
 
 # cmake-format: on
 
+# EMS start
+####################################################################################
+# Helper to obey CMP0077 and work around warnings.
+function(setForce NAME VALUE)
+	set(${NAME}
+			${VALUE}
+			CACHE INTERNAL "" FORCE
+	)
+endfunction()
+
+#easy way to see that things are working.
+setForce(XRT_FEATURE_COMPOSITOR_MAIN ON)
+
+# No reason to disable this
+setForce(XRT_FEATURE_COMPOSITOR_NULL ON)
+
+# It looks like we can use Monado's normal out-of-proc OpenXR instance as-is. We'll see.
+setForce(XRT_FEATURE_OPENXR ON)
+
+setForce(XRT_FEATURE_RENDERDOC OFF) # we are not using this
+setForce(XRT_FEATURE_STEAMVR_PLUGIN OFF) # we are not using this
+setForce(XRT_FEATURE_TRACING OFF) # we are not using this yet
+setForce(XRT_FEATURE_SLAM OFF) # we are not using this
+
+setForce(XRT_FEATURE_CLIENT_DEBUG_GUI OFF) # we are not using this
+
+setForce(XRT_MODULE_MONADO_CLI OFF) # we are not using this
+setForce(XRT_MODULE_MONADO_GUI OFF) # we are not using this
+setForce(XRT_MODULE_MERCURY_HANDTRACKING OFF)
+
+setForce(XRT_BUILD_SAMPLES OFF)
+
+setForce(BUILD_TESTING OFF)
+setForce(BUILD_DOC OFF)
+####################################################################################
+# EMS end
+
 # You can set this from a superproject to add a driver
 # All drivers must be listed in here to be included in the generated header!
 list(
@@ -450,6 +491,56 @@ if(ANDROID AND NOT XRT_ANDROID_PACKAGE)
 	else()
 		set(XRT_ANDROID_PACKAGE "org.freedesktop.monado.openxr_runtime.in_process")
 	endif()
+endif()
+
+# gstreamer_android
+if(ANDROID)
+	if(ANDROID_ABI STREQUAL "arm64-v8a")
+		set(GST_ARCH arm64)
+	elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
+		set(GST_ARCH armv7)
+	elseif(ANDROID_ABI STREQUAL "x86")
+		set(GST_ARCH x86)
+	elseif(ANDROID_ABI STREQUAL "x86_64")
+		set(GST_ARCH x86_64)
+	else()
+		message(FATAL_ERROR "What is this ABI? ${ANDROID_ABI}")
+	endif()
+
+	if(GST_ARCH_DIR)
+		message(STATUS "Using gstreamer from ${GST_ARCH_DIR}")
+	else()
+		if(GST_BASE_DIR)
+			message(STATUS "GST_ARCH_DIR not set, computing from arch and GST_BASE_DIR")
+		else()
+			message(
+					STATUS
+					"GST_ARCH_DIR and GST_BASE_DIR not set, assuming default location"
+			)
+			set(GST_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/gstreamer_android")
+		endif()
+		set(GST_ARCH_DIR ${GST_BASE_DIR}/${GST_ARCH})
+	endif()
+
+	set(USE_GST_SHARED OFF)
+	if(USE_GST_SHARED)
+		include(libraries_shared.cmake)
+	else()
+		include(libraries_static.cmake)
+	endif()
+
+	set(GST_INCLUDE_DIRS ${GST_ARCH_DIR}/include/gstreamer-1.0/
+			${GST_ARCH_DIR}/lib/gstreamer-1.0/include/
+	)
+
+	set(GLIB_INCLUDE_DIRS ${GST_ARCH_DIR}/include/glib-2.0
+			${GST_ARCH_DIR}/lib/glib-2.0/include/
+	)
+	set(LIBSOUP_INCLUDE_DIRS ${GST_ARCH_DIR}/include/libsoup-2.4/)
+	set(JSONGLIB_INCLUDE_DIRS ${GST_ARCH_DIR}/include/json-glib-1.0)
+	set(GIO_INCLUDE_DIRS ${GST_ARCH_DIR}/include/glib-2.0/ ${GST_ARCH_DIR}/lib/gio-unix-2.0/)
+
+	add_subdirectory(gstreamer_android)
 endif()
 
 ###
