@@ -205,7 +205,7 @@ android_device_compute_distortion(
     struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct android_device *d = android_device(xdev);
-	return u_compute_distortion_cardboard(&d->cardboard.values[view], u, v, result);
+    return u_compute_distortion_none(u, v, result);
 }
 
 
