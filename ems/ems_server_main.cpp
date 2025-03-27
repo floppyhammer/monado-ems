@@ -11,8 +11,6 @@
  * @ingroup ipc
  */
 
-#ifdef ANDROID
-
 #include "xrt/xrt_config_os.h"
 
 #include "util/u_metrics.h"
@@ -51,5 +49,3 @@ main(int argc, char *argv[])
 
 	return ret;
 }
-
-#endif

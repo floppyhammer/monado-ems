@@ -494,10 +494,6 @@ if(XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE)
 	list(APPEND ENABLED_HEADSET_DRIVERS steamvr_lh)
 endif()
 
-if(XRT_BUILD_DRIVER_EMS)
-    add_subdirectory(ems)
-endif()
-
 if(XRT_BUILD_SAMPLES)
 	# We build the sample driver to make sure it stays valid,
 	# but it never gets linked into a final target.

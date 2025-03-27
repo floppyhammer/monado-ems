@@ -347,8 +347,6 @@ pack_blit_and_encode(struct ems_compositor *c,
                      struct comp_swapchain *lsc,
                      struct comp_swapchain *rsc)
 {
-    U_LOG_I("%s", __func__);
-
 	if (c->offset_ns == 0) {
 		uint64_t now = os_monotonic_get_ns();
 		c->offset_ns = now;

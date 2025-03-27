@@ -218,7 +218,7 @@ option_with_deps(XRT_HAVE_OPENGLES "Enable OpenGL-ES Graphics API support" DEPEN
 
 option_with_deps(XRT_HAVE_EGL "Enable OpenGL(-ES) on EGL Graphics API support" DEPENDS EGL_FOUND "XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES")
 option_with_deps(XRT_HAVE_SDL2 "Enable use of SDL2" DEPENDS SDL2_FOUND XRT_HAVE_OPENGL)
-setForce(XRT_HAVE_SDL2 OFF)
+set(XRT_HAVE_SDL2 OFF)
 
 option_with_deps(XRT_HAVE_DXGI "Use DXGI APIs for some Windows-specific functionality" DEPENDS DXGI_LIBRARY)
 option_with_deps(XRT_HAVE_WIL "Use WIL for Windows-specific functionality" DEPENDS wil_FOUND)
@@ -409,6 +409,58 @@ option(XRT_FEATURE_OPENXR_SPACE_UNBOUNDED "Enable XR_MSFT_unbounded_reference_sp
 
 # EMS start
 ####################################################################################
+# Make sure we have pretty colours
+option(DISABLE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." OFF)
+
+if(NOT DISABLE_COLORED_OUTPUT)
+	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+		add_compile_options(-fdiagnostics-color=always)
+	elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+		add_compile_options(-fcolor-diagnostics)
+	endif()
+endif()
+
+# Get Monado's CMake modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/monado/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/monado/cmake/sanitizers")
+
+if(NOT MSVC)
+	set(CMAKE_C_FLAGS
+			"${CMAKE_C_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter -Werror=incompatible-pointer-types"
+	)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
+	set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-undefined")
+endif()
+
+option(EMS_LIBSOUP2 "Use libsoup2.4 instead of libsoup3.0" OFF)
+
+# pkgconfig!
+find_package(PkgConfig REQUIRED)
+
+# GLib packages we'll need
+pkg_check_modules(GLIB REQUIRED glib-2.0)
+pkg_check_modules(GST_SDP REQUIRED gstreamer-sdp-1.0)
+pkg_check_modules(GST_WEBRTC REQUIRED gstreamer-webrtc-1.0)
+pkg_check_modules(GST REQUIRED gstreamer-plugins-base-1.0)
+pkg_check_modules(GST REQUIRED gstreamer-plugins-bad-1.0)
+
+if(EMS_LIBSOUP2)
+	pkg_check_modules(LIBSOUP REQUIRED libsoup-2.4)
+else()
+	pkg_check_modules(LIBSOUP REQUIRED libsoup-3.0)
+endif()
+
+pkg_check_modules(JSONGLIB REQUIRED json-glib-1.0)
+pkg_check_modules(GIO REQUIRED gio-2.0)
+
+# Default to PIC code
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+set(MONADO_SRC_XRT ${CMAKE_CURRENT_SOURCE_DIR}/monado/src/xrt)
+
+### Set configuration options for Monado
+
 # Helper to obey CMP0077 and work around warnings.
 function(setForce NAME VALUE)
 	set(${NAME}
@@ -542,6 +594,8 @@ if(ANDROID)
 
 	add_subdirectory(gstreamer_android)
 endif()
+
+add_subdirectory(ems)
 
 ###
 # Flags

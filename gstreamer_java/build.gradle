@@ -19,7 +19,7 @@ tasks.register('copyGStreamerJava', Copy) {
 }
 
 android {
-    compileSdkVersion sharedCompileSdk
+    compileSdk project.sharedCompileSdk
 
     namespace 'org.freedesktop.gstreamer'
 

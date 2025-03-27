@@ -201,10 +201,6 @@ if(XRT_BUILD_DRIVER_SIMULAVR)
 	target_link_libraries(target_lists PRIVATE drv_svr)
 endif()
 
-if(XRT_BUILD_DRIVER_EMS)
-	target_link_libraries(target_lists PRIVATE ems_streaming_server)
-endif()
-
 ####
 # Instance
 #
