@@ -5,6 +5,8 @@
 
 add_subdirectory(include)
 
+add_subdirectory(proto ${CMAKE_CURRENT_BINARY_DIR}/proto)
+
 add_library(ems_callbacks STATIC ems_callbacks.cpp)
 target_link_libraries(
 	ems_callbacks
@@ -34,7 +36,9 @@ add_library(drv_ems STATIC ems_hmd.cpp ems_motion_controller.cpp)
 
 target_link_libraries(drv_ems PRIVATE xrt-interfaces aux_util em_proto ems_callbacks)
 
-add_executable(ems_streaming_server ems_instance.cpp ems_server_internal.h ems_server_main.cpp)
+add_library(ems_streaming_server ems_instance.cpp ems_server_internal.h)
+
+target_include_directories(ems_streaming_server PRIVATE ${GLIB_INCLUDE_DIRS} ${GST_INCLUDE_DIRS})
 
 target_link_libraries(
 	ems_streaming_server
@@ -47,8 +51,7 @@ target_link_libraries(
 		em_proto
 		comp_ems
 		ems_callbacks
+		gstreamer_android
 	)
 
 target_link_libraries(ems_streaming_server PRIVATE st_gui aux_ogl)
-
-install(TARGETS ems_streaming_server RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

@@ -46,3 +46,5 @@ if(XRT_FEATURE_SERVICE
 	)
 	add_subdirectory(sdl_test)
 endif()
+
+#add_subdirectory(ems)

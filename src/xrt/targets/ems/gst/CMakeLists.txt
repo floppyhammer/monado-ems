@@ -4,6 +4,8 @@
 
 add_library(ems_gst STATIC ems_gstreamer_pipeline.c ems_signaling_server.c)
 
+add_subdirectory(../../../auxiliary/gstreamer dir_gstreamer)
+
 target_link_libraries(
 	ems_gst
 	PRIVATE
@@ -12,13 +14,7 @@ target_link_libraries(
 		em_proto
 		aux_util
 		aux_gstreamer
-		${GST_LIBRARIES}
-		${GST_SDP_LIBRARIES}
-		${GST_WEBRTC_LIBRARIES}
-		${GLIB_LIBRARIES}
-		${LIBSOUP_LIBRARIES}
-		${JSONGLIB_LIBRARIES}
-		${GIO_LIBRARIES}
+		gstreamer_android
 	)
 
 target_include_directories(
