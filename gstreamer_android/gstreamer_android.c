@@ -30,6 +30,7 @@ GST_PLUGIN_STATIC_DECLARE(videotestsrc); // Definitely needed
 GST_PLUGIN_STATIC_DECLARE(videoconvertscale);
 GST_PLUGIN_STATIC_DECLARE(overlaycomposition);
 GST_PLUGIN_STATIC_DECLARE(playback); // "FFMPEG "
+GST_PLUGIN_STATIC_DECLARE(x264);
 /* Declaration of static gio modules */
 
 /* Call this function to load GIO modules */
@@ -78,5 +79,6 @@ gst_init_static_plugins (void)
   GST_PLUGIN_STATIC_REGISTER(videoconvertscale);
   GST_PLUGIN_STATIC_REGISTER(overlaycomposition);
   GST_PLUGIN_STATIC_REGISTER(playback);
+  GST_PLUGIN_STATIC_REGISTER(x264);
   gst_android_load_gio_modules ();
 }
