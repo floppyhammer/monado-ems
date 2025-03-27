@@ -13,8 +13,6 @@ target_link_libraries(
 		-Wl,--no-whole-archive
 		${JSONGLIB_LIBRARIES}
 		${LIBSOUP_LIBRARIES}
-		${GST_SDP_LIBRARIES}
-		${GST_WEBRTC_LIBRARIES}
 		${GLIB_LIBRARIES}
 		${GIO_LIBRARIES}
 		EGL::EGL
