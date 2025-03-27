@@ -51,7 +51,6 @@ target_link_libraries(
 		em_proto
 		comp_ems
 		ems_callbacks
-		gstreamer_android
 	)
 
 target_link_libraries(ems_streaming_server PRIVATE aux_ogl)

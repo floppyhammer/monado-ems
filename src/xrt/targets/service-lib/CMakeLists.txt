@@ -9,9 +9,9 @@ target_link_libraries(
 		aux_util
 		st_prober
 		ipc_server
-		comp_main
-		target_lists
-		target_instance
+#		comp_main
+#		target_lists
+#		target_instance
 		xrt-external-jni-wrap
 		ems_streaming_server
 	)
