@@ -54,4 +54,4 @@ target_link_libraries(
 		gstreamer_android
 	)
 
-target_link_libraries(ems_streaming_server PRIVATE st_gui aux_ogl)
+target_link_libraries(ems_streaming_server PRIVATE aux_ogl)

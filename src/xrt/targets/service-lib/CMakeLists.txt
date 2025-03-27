@@ -13,5 +13,5 @@ target_link_libraries(
 		target_lists
 		target_instance
 		xrt-external-jni-wrap
-#		ems_streaming_server
+		ems_streaming_server
 	)
