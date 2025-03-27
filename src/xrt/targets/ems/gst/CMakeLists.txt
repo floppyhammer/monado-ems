@@ -13,8 +13,8 @@ target_link_libraries(
 		ems_callbacks
 		em_proto
 		aux_util
+		gstreamer_android # Must go before aux_gstreamer
 		aux_gstreamer
-		gstreamer_android
 	)
 
 target_include_directories(
