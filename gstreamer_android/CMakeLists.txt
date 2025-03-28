@@ -16,6 +16,7 @@ target_link_libraries(
 		${GLIB_LIBRARIES}
 		${GIO_LIBRARIES}
 		EGL::EGL
+		android
 	PUBLIC ${ANDROID_LOG_LIBRARY} z
 	)
 target_include_directories(
