@@ -124,10 +124,12 @@ ems_signaling_server_handle_message(EmsSignalingServer *server, SoupWebsocketCon
 out:
 	g_object_unref(parser);
 }
+#include <android/log.h>
 
 static void
 message_cb(SoupWebsocketConnection *connection, gint type, GBytes *message, gpointer user_data)
 {
+    __android_log_print(ANDROID_LOG_ERROR, "ems_signaling_server", "server received a message!");
 	ems_signaling_server_handle_message(EMS_SIGNALING_SERVER(user_data), connection, message);
 }
 
@@ -205,7 +207,7 @@ ems_signaling_server_init(EmsSignalingServer *server)
 	soup_server_add_handler(server->soup_server, NULL, http_cb, server, NULL);
 	soup_server_add_websocket_handler(server->soup_server, "/ws", NULL, NULL, websocket_cb, server, NULL);
 
-	soup_server_listen_all(server->soup_server, 8080, 0, &error);
+	soup_server_listen_all(server->soup_server, 52356, 0, &error);
 	g_assert_no_error(error);
 }
 
@@ -259,7 +261,7 @@ ems_signaling_server_send_sdp_offer(EmsSignalingServer *server, EmsClientId clie
 	json_node_unref(root);
 	g_object_unref(builder);
 }
-
+#include <android/log.h>
 void
 ems_signaling_server_send_candidate(EmsSignalingServer *server,
                                     EmsClientId client_id,

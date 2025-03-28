@@ -347,6 +347,7 @@ pack_blit_and_encode(struct ems_compositor *c,
                      struct comp_swapchain *lsc,
                      struct comp_swapchain *rsc)
 {
+    EMS_COMP_WARN(c, "pack_blit_and_encode");
 	if (c->offset_ns == 0) {
 		uint64_t now = os_monotonic_get_ns();
 		c->offset_ns = now;
@@ -379,6 +380,8 @@ pack_blit_and_encode(struct ems_compositor *c,
 		xrt_frame_reference(&frame, NULL);
 		return;
 	}
+
+    EMS_COMP_WARN(c, "doing blit");
 
 	// Blit two views side-by-side onto c->bounce.image (does scaling).
 	{
