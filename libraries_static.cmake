@@ -314,7 +314,9 @@ set(GST_LIBRARIES
 	${GST_ARCH_DIR}/lib/libnghttp2.a
 	)
 
-if(EXISTS "${GST_ARCH_DIR}/lib/libwebrtc-audio-processing-1.a")
+if(EXISTS "${GST_ARCH_DIR}/lib/libwebrtc-audio-processing-2.a")
+	list(APPEND GST_LIBRARIES "${GST_ARCH_DIR}/lib/libwebrtc-audio-processing-2.a")
+elseif(EXISTS "${GST_ARCH_DIR}/lib/libwebrtc-audio-processing-1.a")
 	list(APPEND GST_LIBRARIES "${GST_ARCH_DIR}/lib/libwebrtc-audio-processing-1.a")
 else()
 	list(APPEND GST_LIBRARIES "${GST_ARCH_DIR}/lib/libwebrtc_audio_processing.a")
