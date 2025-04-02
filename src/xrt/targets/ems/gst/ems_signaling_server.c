@@ -165,8 +165,6 @@ ems_signaling_server_add_websocket_connection(EmsSignalingServer *server, SoupWe
 	g_signal_connect(connection, "message", (GCallback)message_cb, server);
 	g_signal_connect(connection, "closed", (GCallback)closed_cb, server);
 
-
-
 	g_signal_emit(server, signals[SIGNAL_WS_CLIENT_CONNECTED], 0, connection);
 }
 

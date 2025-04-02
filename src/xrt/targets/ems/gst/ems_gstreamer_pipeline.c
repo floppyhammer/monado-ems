@@ -44,14 +44,11 @@
 #include <assert.h>
 
 #define WEBRTC_TEE_NAME "webrtctee"
-
-#ifdef __aarch64__
-#define DEFAULT_VIDEOSINK " queue max-size-bytes=0 ! kmssink bus-id=a0070000.v_mix"
-#else
-#define DEFAULT_VIDEOSINK " videoconvert ! autovideosink "
-#endif
-
-
+//#ifdef __aarch64__
+//#define DEFAULT_VIDEOSINK " queue max-size-bytes=0 ! kmssink bus-id=a0070000.v_mix"
+//#else
+//#define DEFAULT_VIDEOSINK " videoconvert ! autovideosink "
+//#endif
 
 EmsSignalingServer *signaling_server;
 
@@ -575,7 +572,21 @@ ems_gstreamer_pipeline_stop(struct gstreamer_pipeline *gp)
 	gst_element_set_state(egp->base.pipeline, GST_STATE_NULL);
 }
 
-
+void gstAndroidLog(GstDebugCategory * category,
+                   GstDebugLevel      level,
+                   const gchar      * file,
+                   const gchar      * function,
+                   gint               line,
+                   GObject          * object,
+                   GstDebugMessage  * message,
+                   gpointer           data)
+{
+    if (level <= gst_debug_category_get_threshold (category))
+    {
+        __android_log_print(ANDROID_LOG_DEBUG, "gst", "%s, %s: %s",
+                            file, function, gst_debug_message_get(message));
+    }
+}
 
 void
 ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
@@ -587,7 +598,6 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 	GstElement *pipeline;
 	GError *error = NULL;
 	GstBus *bus;
-
 
 	signaling_server = ems_signaling_server_new();
 
@@ -606,9 +616,7 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 	    "tee name=%s allow-not-linked=true",
 	    appsrc_name, WEBRTC_TEE_NAME);
 
-	// no webrtc bin yet until later!
-
-	g_print("EMS gstreamer pipeline: %s\n", pipeline_str);
+	// No webrtc bin yet until later!
 
 	struct ems_gstreamer_pipeline *egp = U_TYPED_CALLOC(struct ems_gstreamer_pipeline);
 	egp->base.node.break_apart = break_apart;
@@ -616,8 +624,14 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 	egp->base.xfctx = xfctx;
 	egp->callbacks = callbacks_collection;
 
-
 	gst_init(NULL, NULL);
+
+#ifdef __ANDROID__
+    gst_debug_add_log_function(&gstAndroidLog, NULL, NULL);
+#endif
+    gst_debug_set_default_threshold( GST_LEVEL_ERROR );
+//    gst_debug_set_threshold_for_name ("webrtcbin", GST_LEVEL_DEBUG);
+//    gst_debug_set_threshold_for_name ("webrtcbindatachanne", GST_LEVEL_DEBUG);
 
 	pipeline = gst_parse_launch(pipeline_str, &error);
 	g_assert_no_error(error);
@@ -640,11 +654,6 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 
 	// Setup pipeline.
 	egp->base.pipeline = pipeline;
-	// GstElement *appsrc = gst_element_factory_make("appsrc", appsrc_name);
-	// GstElement *conv = gst_element_factory_make("videoconvert", "conv");
-	// GstElement *scale = gst_element_factory_make("videoscale", "scale");
-	// GstElement *videosink = gst_element_factory_make("autovideosink", "videosink");
-
 
 	/*
 	 * Add ourselves to the context so we are destroyed.
