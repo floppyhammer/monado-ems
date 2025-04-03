@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: BSL-1.0
 
 cmake_minimum_required(VERSION 3.22)
+
+if(WIN32)
+	set(VCPKG_TARGET_ANDROID ON)
+    include(vcpkg_android.cmake)
+endif()
+
 project(
 	XRT-EMS
 	VERSION 24.0.0
