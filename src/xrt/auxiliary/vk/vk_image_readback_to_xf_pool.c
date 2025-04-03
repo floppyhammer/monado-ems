@@ -157,6 +157,11 @@ vk_image_readback_to_xf_pool_get_unused_frame(struct vk_bundle *vk,
 	// Look for now.
 	os_mutex_lock(&pool->mutex);
 
+    U_LOG_IFL_E(U_LOGGING_DEBUG, "Pool frames:");
+    for (int i = 0; i < pool->num_images; i++) {
+        U_LOG_IFL_E(U_LOGGING_DEBUG, "Frame %d, created %d, in_use %d", i, pool->images[i].created, pool->images[i].in_use);
+    }
+
 	if (find_created_not_used_wrap_locked(pool, out)) {
 		os_mutex_unlock(&pool->mutex);
 		return true;

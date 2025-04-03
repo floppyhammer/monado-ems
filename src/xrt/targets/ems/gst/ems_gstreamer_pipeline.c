@@ -583,7 +583,7 @@ void gstAndroidLog(GstDebugCategory * category,
 {
     if (level <= gst_debug_category_get_threshold (category))
     {
-        U_LOG_IFL_E(U_LOGGING_ERROR, "%s, %s: %s", file, function, gst_debug_message_get(message));
+        U_LOG_IFL_E(U_LOGGING_DEBUG, "%s, %s: %s", file, function, gst_debug_message_get(message));
     }
 }
 
@@ -628,9 +628,9 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 #ifdef __ANDROID__
     gst_debug_add_log_function(&gstAndroidLog, NULL, NULL);
 #endif
-    gst_debug_set_default_threshold( GST_LEVEL_ERROR );
-//    gst_debug_set_threshold_for_name ("webrtcbin", GST_LEVEL_DEBUG);
-//    gst_debug_set_threshold_for_name ("webrtcbindatachanne", GST_LEVEL_DEBUG);
+    gst_debug_set_default_threshold( GST_LEVEL_INFO );
+    gst_debug_set_threshold_for_name ("webrtcbin", GST_LEVEL_INFO);
+    gst_debug_set_threshold_for_name ("webrtcbindatachannel", GST_LEVEL_INFO);
 
 	pipeline = gst_parse_launch(pipeline_str, &error);
 	g_assert_no_error(error);
