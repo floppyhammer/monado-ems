@@ -583,8 +583,7 @@ void gstAndroidLog(GstDebugCategory * category,
 {
     if (level <= gst_debug_category_get_threshold (category))
     {
-        __android_log_print(ANDROID_LOG_DEBUG, "gst", "%s, %s: %s",
-                            file, function, gst_debug_message_get(message));
+        U_LOG_IFL_E(U_LOGGING_ERROR, "%s, %s: %s", file, function, gst_debug_message_get(message));
     }
 }
 
