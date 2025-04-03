@@ -292,7 +292,7 @@ webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, st
 	caps = gst_caps_from_string(
 	    "application/x-rtp, "
 	    "payload=96,encoding-name=H264,clock-rate=90000,media=video,packetization-mode=(string)1,profile-level-id=("
-	    "string)42e01f");
+	    "string)42e01f,ssrc=1");
 	g_signal_emit_by_name(webrtcbin, "add-transceiver", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDONLY, caps,
 	                      &transceiver);
 
@@ -605,12 +605,12 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 	    "queue ! "                         //
 	    "videoconvert ! "                  //
 	    "video/x-raw,format=NV12 ! "       //
-	    "queue !"                          //
+	    "queue ! "                          //
 	    "x264enc tune=zerolatency ! "      //
 	    "video/x-h264,profile=baseline ! " //
-	    "queue !"                          //
+	    "queue ! "                          //
 	    "h264parse ! "                     //
-	    "rtph264pay config-interval=1 ! "  //
+	    "rtph264pay config-interval=1 ssrc=1 ! "  //
 	    "application/x-rtp,payload=96 ! "  //
 	    "tee name=%s allow-not-linked=true",
 	    appsrc_name, WEBRTC_TEE_NAME);
@@ -628,7 +628,7 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 #ifdef __ANDROID__
     gst_debug_add_log_function(&gstAndroidLog, NULL, NULL);
 #endif
-    gst_debug_set_default_threshold( GST_LEVEL_INFO );
+    gst_debug_set_default_threshold( GST_LEVEL_WARNING );
     gst_debug_set_threshold_for_name ("webrtcbin", GST_LEVEL_INFO);
     gst_debug_set_threshold_for_name ("webrtcbindatachannel", GST_LEVEL_INFO);
 
