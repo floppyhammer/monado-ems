@@ -135,13 +135,15 @@ connect_webrtc_to_tee(GstElement *webrtcbin)
 	if (pipeline == NULL)
 		return;
 	tee = gst_bin_get_by_name(GST_BIN(pipeline), WEBRTC_TEE_NAME);
-//	srcpad = gst_element_request_pad_simple(tee, "src_%u");
-//	sinkpad = gst_element_request_pad_simple(webrtcbin, "sink_0");
-//	ret = gst_pad_link(srcpad, sinkpad);
-    ret = gst_element_link(tee, webrtcbin);
+
+	srcpad = gst_element_request_pad_simple(tee, "src_%u");
+	sinkpad = gst_element_request_pad_simple(webrtcbin, "sink_0");
+
+	ret = gst_pad_link(srcpad, sinkpad);
 	g_assert(ret == GST_PAD_LINK_OK);
-//	gst_object_unref(srcpad);
-//	gst_object_unref(sinkpad);
+
+	gst_object_unref(srcpad);
+	gst_object_unref(sinkpad);
 	gst_object_unref(tee);
 	gst_object_unref(pipeline);
 }
