@@ -545,7 +545,7 @@ list(
 # Can be overridden from outside/command line
 if(ANDROID AND NOT XRT_ANDROID_PACKAGE)
 	if(XRT_FEATURE_SERVICE)
-		set(XRT_ANDROID_PACKAGE "org.freedesktop.monado.openxr_runtime.out_of_process")
+		set(XRT_ANDROID_PACKAGE "org.freedesktop.monado.openxr_runtime.out_of_process_ems")
 	else()
 		set(XRT_ANDROID_PACKAGE "org.freedesktop.monado.openxr_runtime.in_process")
 	endif()
