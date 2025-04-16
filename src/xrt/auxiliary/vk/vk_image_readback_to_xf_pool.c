@@ -54,9 +54,10 @@ vk_xf_readback_pool_try_create_new_frame(struct vk_bundle *vk, struct vk_image_r
 
 	VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
+    // Comment VK_MEMORY_PROPERTY_HOST_CACHED_BIT out to fix unavailable vulkan memory type on some Android devices
 	const VkMemoryPropertyFlags memory_property_flags = //
 	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |          //
-	    VK_MEMORY_PROPERTY_HOST_CACHED_BIT |            //
+//	    VK_MEMORY_PROPERTY_HOST_CACHED_BIT |            //
 	    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;            //
 
 	VkResult res = vk_create_image_advanced( //
