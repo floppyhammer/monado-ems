@@ -38,17 +38,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-// native quest resolution
-// #define APP_VIEW_W (1832)
-// #define APP_VIEW_H (1920)
-
-
-#define APP_VIEW_W (1920)
-#define APP_VIEW_H (1920)
+#define APP_VIEW_W (1280)
+#define APP_VIEW_H (800)
 
 // TODO making this 1 causes readback failures
 // I assume this means there is some kind of buffer creation failing and we aren't handling the error right.
-#define READBACK_DIV_FACTOR (2)
+#define READBACK_DIV_FACTOR (1)
 
 #define READBACK_W2 (APP_VIEW_W / READBACK_DIV_FACTOR)
 #define READBACK_W (READBACK_W2 * 2)
@@ -505,20 +500,19 @@ pack_blit_and_encode(struct ems_compositor *c,
 	}
 
 	// HACK
-    frame->timestamp = os_monotonic_get_ns();
-    frame->source_timestamp = frame->timestamp;
-    frame->source_sequence = c->image_sequence++;
-    frame->source_id = 0;
+	frame->timestamp = os_monotonic_get_ns();
+	frame->source_timestamp = frame->timestamp;
+	frame->source_sequence = c->image_sequence++;
+	frame->source_id = 0;
 
 	if (!c->pipeline_playing) {
 		ems_gstreamer_pipeline_play(c->gstreamer_pipeline);
 		c->pipeline_playing = true;
 	}
 
-//	u_sink_debug_push_frame(&c->debug_sink, frame);
+	u_sink_debug_push_frame(&c->debug_sink, frame);
 
 	xrt_sink_push_frame(c->frame_sink, frame);
-
 
 	// TODO send data channel message with pose and fov here?
 

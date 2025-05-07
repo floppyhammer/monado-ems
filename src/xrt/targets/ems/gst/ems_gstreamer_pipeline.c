@@ -44,19 +44,14 @@
 #include <assert.h>
 
 #define WEBRTC_TEE_NAME "webrtctee"
-//#ifdef __aarch64__
-//#define DEFAULT_VIDEOSINK " queue max-size-bytes=0 ! kmssink bus-id=a0070000.v_mix"
-//#else
-//#define DEFAULT_VIDEOSINK " videoconvert ! autovideosink "
-//#endif
+
+#define EM_USE_ENCODEBIN
 
 EmsSignalingServer *signaling_server;
-
 
 struct ems_gstreamer_pipeline
 {
 	struct gstreamer_pipeline base;
-
 
 	// struct GstElement *pipeline;
 	GstElement *webrtc;
@@ -64,10 +59,8 @@ struct ems_gstreamer_pipeline
 	GObject *data_channel;
 	guint timeout_src_id;
 
-
 	struct ems_callbacks *callbacks;
 };
-
 
 static gboolean
 sigint_handler(gpointer user_data)
@@ -185,15 +178,12 @@ webrtc_on_data_channel_cb(GstElement *webrtcbin, GObject *data_channel, struct e
 	U_LOG_I("webrtc_on_data_channel_cb called");
 }
 
-
-
 static void
 webrtc_on_ice_candidate_cb(GstElement *webrtcbin, guint mlineindex, gchar *candidate)
 {
 	ems_signaling_server_send_candidate(signaling_server, g_object_get_data(G_OBJECT(webrtcbin), "client_id"),
 	                                    mlineindex, candidate);
 }
-
 
 static void
 data_channel_error_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp)
@@ -246,6 +236,7 @@ data_channel_message_data_cb(GstWebRTCDataChannel *datachannel, GBytes *data, st
 		return;
 	}
 	ems_callbacks_call(egp->callbacks, EMS_CALLBACKS_EVENT_TRACKING, &message);
+	ems_callbacks_call(egp->callbacks, EMS_CALLBACKS_EVENT_CONTROLLER, &message);
 }
 
 static void
@@ -264,7 +255,7 @@ webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, st
 	GstCaps *caps;
 	GstStateChangeReturn ret;
 	GstWebRTCRTPTransceiver *transceiver;
-    U_LOG_D("Connected");
+
 	name = g_strdup_printf("webrtcbin_%p", client_id);
 
 	webrtcbin = gst_element_factory_make("webrtcbin", name);
@@ -302,9 +293,8 @@ webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, st
 
 	connect_webrtc_to_tee(webrtcbin);
 
-	g_signal_emit_by_name(
-	    webrtcbin, "create-offer", NULL,
-	    gst_promise_new_with_change_func((GstPromiseChangeFunc)on_offer_created, webrtcbin, NULL));
+	GstPromise *promise = gst_promise_new_with_change_func((GstPromiseChangeFunc)on_offer_created, webrtcbin, NULL);
+	g_signal_emit_by_name(webrtcbin, "create-offer", NULL, promise);
 
 	GST_DEBUG_BIN_TO_DOT_FILE(pipeline, GST_DEBUG_GRAPH_SHOW_ALL, "rtcbin");
 
@@ -604,30 +594,40 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 	GError *error = NULL;
 	GstBus *bus;
 
+
 	signaling_server = ems_signaling_server_new();
 
 	pipeline_str = g_strdup_printf(
-	    "appsrc name=%s ! "                //
-	    "queue ! "                         //
-	    "videoconvert ! "                  //
-	    "video/x-raw,format=NV12 ! "       //
-	    "queue ! "                          //
-	    "x264enc tune=zerolatency ! "      //
-	    "video/x-h264,profile=baseline ! " //
-	    "queue ! "                          //
-	    "h264parse ! "                     //
-	    "rtph264pay config-interval=1 ssrc=1 ! "  //
-	    "application/x-rtp,payload=96 ! "  //
+	    "appsrc name=%s ! " //
+	    "queue ! "          //
+	    "videoconvert ! "   //
+	    "videorate ! "
+	    "videoscale ! "
+	    "video/x-raw,format=NV12 ! "               //
+	    "queue !"                                  //
+#ifdef EM_USE_ENCODEBIN
+	    "encodebin2 profile=\"video/x-h264,tune=zerolatency\" ! "
+#else
+	    "x264enc tune=zerolatency bitrate=8192 key-int-max=60 ! " //
+        "video/x-h264,profile=baseline ! "         //
+#endif
+	    "queue !"                                  //
+	    "h264parse ! "                             //
+	    "rtph264pay config-interval=1 ! "          //
+	    "application/x-rtp,payload=96 ! "          //
 	    "tee name=%s allow-not-linked=true",
 	    appsrc_name, WEBRTC_TEE_NAME);
 
-	// No webrtc bin yet until later!
+	// no webrtc bin yet until later!
+
+	g_print("EMS gstreamer pipeline: %s\n", pipeline_str);
 
 	struct ems_gstreamer_pipeline *egp = U_TYPED_CALLOC(struct ems_gstreamer_pipeline);
 	egp->base.node.break_apart = break_apart;
 	egp->base.node.destroy = destroy;
 	egp->base.xfctx = xfctx;
 	egp->callbacks = callbacks_collection;
+
 
 	gst_init(NULL, NULL);
 
@@ -659,6 +659,11 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 
 	// Setup pipeline.
 	egp->base.pipeline = pipeline;
+	// GstElement *appsrc = gst_element_factory_make("appsrc", appsrc_name);
+	// GstElement *conv = gst_element_factory_make("videoconvert", "conv");
+	// GstElement *scale = gst_element_factory_make("videoscale", "scale");
+	// GstElement *videosink = gst_element_factory_make("autovideosink", "videosink");
+
 
 	/*
 	 * Add ourselves to the context so we are destroyed.

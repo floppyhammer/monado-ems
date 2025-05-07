@@ -71,10 +71,10 @@ http_cb(SoupServer *server,
 }
 #else
 static void
-http_cb(SoupServer *server,
-        SoupServerMessage *msg,
-        const char *path,
-        GHashTable *query,
+http_cb(SoupServer *server,     //
+        SoupServerMessage *msg, //
+        const char *path,       //
+        GHashTable *query,      //
         gpointer user_data)
 {
 	// We're not serving any HTTP traffic - if somebody (erroneously) submits an HTTP request, tell them to get
@@ -162,6 +162,8 @@ ems_signaling_server_add_websocket_connection(EmsSignalingServer *server, SoupWe
 
 	g_signal_connect(connection, "message", (GCallback)message_cb, server);
 	g_signal_connect(connection, "closed", (GCallback)closed_cb, server);
+
+
 
 	g_signal_emit(server, signals[SIGNAL_WS_CLIENT_CONNECTED], 0, connection);
 }
@@ -309,19 +311,17 @@ ems_signaling_server_class_init(EmsSignalingServerClass *klass)
 	gobject_class->dispose = ems_signaling_server_dispose;
 
 	signals[SIGNAL_WS_CLIENT_CONNECTED] =
-		g_signal_new("ws-client-connected", G_OBJECT_CLASS_TYPE(klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL,
-		             G_TYPE_NONE, 1, G_TYPE_POINTER);
+	    g_signal_new("ws-client-connected", G_OBJECT_CLASS_TYPE(klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL,
+	                 G_TYPE_NONE, 1, G_TYPE_POINTER);
 
 	signals[SIGNAL_WS_CLIENT_DISCONNECTED] =
-		g_signal_new("ws-client-disconnected", G_OBJECT_CLASS_TYPE(klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-		             NULL,
-		             G_TYPE_NONE, 1, G_TYPE_POINTER);
+	    g_signal_new("ws-client-disconnected", G_OBJECT_CLASS_TYPE(klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL,
+	                 G_TYPE_NONE, 1, G_TYPE_POINTER);
 
 	signals[SIGNAL_SDP_ANSWER] = g_signal_new("sdp-answer", G_OBJECT_CLASS_TYPE(klass), G_SIGNAL_RUN_LAST, 0, NULL,
 	                                          NULL, NULL, G_TYPE_NONE, 2, G_TYPE_POINTER, G_TYPE_STRING);
 
 	signals[SIGNAL_CANDIDATE] =
-		g_signal_new("candidate", G_OBJECT_CLASS_TYPE(klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL,
-		             G_TYPE_NONE,
-		             3, G_TYPE_POINTER, G_TYPE_UINT, G_TYPE_STRING);
+	    g_signal_new("candidate", G_OBJECT_CLASS_TYPE(klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL, G_TYPE_NONE,
+	                 3, G_TYPE_POINTER, G_TYPE_UINT, G_TYPE_STRING);
 }
