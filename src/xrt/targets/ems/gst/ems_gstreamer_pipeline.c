@@ -597,26 +597,24 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 
 	signaling_server = ems_signaling_server_new();
 
-	pipeline_str = g_strdup_printf(
-	    "appsrc name=%s ! " //
-	    "queue ! "          //
-	    "videoconvert ! "   //
-	    "videorate ! "
-	    "videoscale ! "
-	    "video/x-raw,format=NV12 ! "               //
-	    "queue !"                                  //
-#ifdef EM_USE_ENCODEBIN
-	    "encodebin2 profile=\"video/x-h264,tune=zerolatency\" ! "
-#else
-	    "x264enc tune=zerolatency bitrate=8192 key-int-max=60 ! " //
-        "video/x-h264,profile=baseline ! "         //
-#endif
-	    "queue !"                                  //
-	    "h264parse ! "                             //
-	    "rtph264pay config-interval=1 ! "          //
-	    "application/x-rtp,payload=96 ! "          //
-	    "tee name=%s allow-not-linked=true",
-	    appsrc_name, WEBRTC_TEE_NAME);
+    pipeline_str = g_strdup_printf(
+            "appsrc name=%s ! " //
+            "queue ! "          //
+            "videoconvert ! "   //
+            "videorate ! "
+            "videoscale ! "
+            "video/x-raw,format=NV12,framerate=60/1 ! "               //
+            #ifdef EM_USE_ENCODEBIN
+            "encodebin2 profile=\"video/x-h264|element-properties,tune=zerolatency,bitrate=80000000\" ! "
+            #else
+            "x264enc ! " //
+            "video/x-h264,profile=baseline,tune=zerolatency,bitrate=8192 ! "         //
+            #endif
+            "h264parse ! "                             //
+            "rtph264pay config-interval=1 ! "          //
+            "application/x-rtp,payload=96 ! "          //
+            "tee name=%s allow-not-linked=true",
+            appsrc_name, WEBRTC_TEE_NAME);
 
 	// no webrtc bin yet until later!
 
@@ -672,4 +670,9 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 	xrt_frame_context_add(xfctx, &egp->base.node);
 
 	*out_gp = &egp->base;
+}
+
+void ems_gstreamer_pipeline_dump(struct gstreamer_pipeline *gp) {
+    gchar *data = gst_debug_bin_to_dot_data(GST_BIN(gp->pipeline), GST_DEBUG_GRAPH_SHOW_ALL);
+    int a = 1;
 }
