@@ -629,6 +629,14 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 
 	gst_init(NULL, NULL);
 
+    GstRegistry* plugins_register = gst_registry_get();
+    GstPluginFeature* enc = gst_registry_lookup_feature(plugins_register, "amcvidenc-c2qtiavcencoder");
+    if(enc == NULL) {
+        abort();
+    }
+    gst_plugin_feature_set_rank(enc, GST_RANK_PRIMARY + 1);
+    gst_object_unref(enc);
+
 #ifdef __ANDROID__
     gst_debug_add_log_function(&gstAndroidLog, NULL, NULL);
 #endif
