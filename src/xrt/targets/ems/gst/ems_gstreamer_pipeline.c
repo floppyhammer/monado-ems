@@ -682,5 +682,5 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 
 void ems_gstreamer_pipeline_dump(struct gstreamer_pipeline *gp) {
     gchar *data = gst_debug_bin_to_dot_data(GST_BIN(gp->pipeline), GST_DEBUG_GRAPH_SHOW_ALL);
-    int a = 1;
+    g_free(data);
 }

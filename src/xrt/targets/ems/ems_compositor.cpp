@@ -367,6 +367,8 @@ pack_blit_and_encode(struct ems_compositor *c,
 	// For submitting commands.
 	vk_cmd_pool_lock(&c->cmd_pool);
 
+//    ems_gstreamer_pipeline_dump(c->gstreamer_pipeline);
+
 	ret = vk_cmd_pool_create_and_begin_cmd_buffer_locked(vk, &c->cmd_pool, flags, &cmd);
 	if (ret != VK_SUCCESS) {
 		EMS_COMP_ERROR(c, "vk_cmd_pool_create_and_begin_cmd_buffer_locked: %s", vk_result_string(ret));
