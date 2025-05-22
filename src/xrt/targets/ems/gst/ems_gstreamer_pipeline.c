@@ -47,7 +47,7 @@
 
 #define EM_USE_ENCODEBIN
 
-EmsSignalingServer *signaling_server;
+EmsSignalingServer *signaling_server = NULL;
 
 struct ems_gstreamer_pipeline
 {
@@ -594,6 +594,9 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 	GError *error = NULL;
 	GstBus *bus;
 
+    if (signaling_server) {
+        g_object_unref(signaling_server);
+    }
 
 	signaling_server = ems_signaling_server_new();
 
