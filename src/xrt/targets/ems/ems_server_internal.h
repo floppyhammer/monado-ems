@@ -39,68 +39,70 @@ struct ems_hmd;
 
 struct ems_hmd_recvbuf
 {
-	std::atomic_bool updated;
-	std::mutex mutex;
-	struct xrt_pose pose;
+    std::atomic_bool updated;
+    std::mutex mutex;
+    struct xrt_pose pose;
 };
 
 struct ems_hmd
 {
-	//! Has to come first.
-	struct xrt_device base;
+    //! Has to come first.
+    struct xrt_device base;
 
-	struct xrt_pose pose;
+    struct xrt_pose pose;
 
-	// Should outlive us
-	struct ems_instance *instance;
+    // Should outlive us
+    struct ems_instance *instance;
 
-	// struct os_mutex mutex;
-	std::unique_ptr<ems_hmd_recvbuf> received;
-	enum u_logging_level log_level;
+    // struct os_mutex mutex;
+    std::unique_ptr<ems_hmd_recvbuf> received;
+    enum u_logging_level log_level;
 };
 
 struct ems_motion_controller
 {
-	//! Has to come first.
-	struct xrt_device base;
+    //! Has to come first.
+    struct xrt_device base;
 
-	struct xrt_pose pose;
+    struct xrt_pose pose;
 
-	// Should outlive us
-	struct ems_instance *instance;
+    // Should outlive us
+    struct ems_instance *instance;
 
-	enum u_logging_level log_level;
+    enum u_logging_level log_level;
 
-	bool active;
+    bool active;
+
+    struct _em_proto_HandJointLocation* hand_joints;
 };
 
 struct ems_instance
 {
-	//! Base class for devices.
-	struct xrt_device xdev_base;
+    //! Base class for devices.
+    struct xrt_device xdev_base;
 
-	//! Instance base.
-	struct xrt_instance xinst_base;
+    //! Instance base.
+    struct xrt_instance xinst_base;
 
-	//! System, implemented for now using helper code.
-	struct u_system *usys;
+    //! System, implemented for now using helper code.
+    struct u_system *usys;
 
-	//! System devices base.
-	struct xrt_system_devices xsysd_base;
+    //! System devices base.
+    struct xrt_system_devices xsysd_base;
 
-	//! Space overseer, implemented for now using helper code.
-	struct xrt_space_overseer *xso;
+    //! Space overseer, implemented for now using helper code.
+    struct xrt_space_overseer *xso;
 
-	//! Shared tracking origin for all devices.
-	struct xrt_tracking_origin tracking_origin;
+    //! Shared tracking origin for all devices.
+    struct xrt_tracking_origin tracking_origin;
 
-	// convenience
-	struct ems_hmd *head;
-	struct ems_motion_controller *left;
-	struct ems_motion_controller *right;
+    // convenience
+    struct ems_hmd *head;
+    struct ems_motion_controller *left;
+    struct ems_motion_controller *right;
 
-	//! Callbacks collection
-	struct ems_callbacks *callbacks;
+    //! Callbacks collection
+    struct ems_callbacks *callbacks;
 };
 
 

@@ -13,7 +13,6 @@
 
 #include "gstreamer/gst_pipeline.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
