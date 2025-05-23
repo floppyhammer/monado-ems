@@ -68,6 +68,8 @@ typedef struct _em_proto_TrackingMessage {
     int64_t sequence_idx;
     pb_callback_t hand_joint_locations_left;
     pb_callback_t hand_joint_locations_right;
+    float controller_grip_value_left;
+    float controller_grip_value_right;
 } em_proto_TrackingMessage;
 
 typedef struct _em_proto_InputThumbstick {
@@ -187,7 +189,7 @@ extern "C" {
 #define em_proto_Vec2_init_default               {0, 0}
 #define em_proto_Pose_init_default               {false, em_proto_Vec3_init_default, false, em_proto_Quaternion_init_default}
 #define em_proto_HandJointLocation_init_default  {0, false, em_proto_Pose_init_default, 0}
-#define em_proto_TrackingMessage_init_default    {false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, 0, 0, {{NULL}, NULL}, {{NULL}, NULL}}
+#define em_proto_TrackingMessage_init_default    {false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, 0, 0, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0}
 #define em_proto_InputThumbstick_init_default    {false, em_proto_Vec2_init_default, 0, 0}
 #define em_proto_InputValueTouch_init_default    {0, 0}
 #define em_proto_InputClickTouch_init_default    {0, 0}
@@ -203,7 +205,7 @@ extern "C" {
 #define em_proto_Vec2_init_zero                  {0, 0}
 #define em_proto_Pose_init_zero                  {false, em_proto_Vec3_init_zero, false, em_proto_Quaternion_init_zero}
 #define em_proto_HandJointLocation_init_zero     {0, false, em_proto_Pose_init_zero, 0}
-#define em_proto_TrackingMessage_init_zero       {false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, 0, 0, {{NULL}, NULL}, {{NULL}, NULL}}
+#define em_proto_TrackingMessage_init_zero       {false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, 0, 0, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0}
 #define em_proto_InputThumbstick_init_zero       {false, em_proto_Vec2_init_zero, 0, 0}
 #define em_proto_InputValueTouch_init_zero       {0, 0}
 #define em_proto_InputClickTouch_init_zero       {0, 0}
@@ -241,6 +243,8 @@ extern "C" {
 #define em_proto_TrackingMessage_sequence_idx_tag 9
 #define em_proto_TrackingMessage_hand_joint_locations_left_tag 10
 #define em_proto_TrackingMessage_hand_joint_locations_right_tag 11
+#define em_proto_TrackingMessage_controller_grip_value_left_tag 12
+#define em_proto_TrackingMessage_controller_grip_value_right_tag 13
 #define em_proto_InputThumbstick_xy_tag          1
 #define em_proto_InputThumbstick_click_tag       2
 #define em_proto_InputThumbstick_touch_tag       3
@@ -321,7 +325,9 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  controller_aim_right,   7) \
 X(a, STATIC,   SINGULAR, INT64,    timestamp,         8) \
 X(a, STATIC,   SINGULAR, INT64,    sequence_idx,      9) \
 X(a, CALLBACK, REPEATED, MESSAGE,  hand_joint_locations_left,  10) \
-X(a, CALLBACK, REPEATED, MESSAGE,  hand_joint_locations_right,  11)
+X(a, CALLBACK, REPEATED, MESSAGE,  hand_joint_locations_right,  11) \
+X(a, STATIC,   SINGULAR, FLOAT,    controller_grip_value_left,  12) \
+X(a, STATIC,   SINGULAR, FLOAT,    controller_grip_value_right,  13)
 #define em_proto_TrackingMessage_CALLBACK pb_default_field_callback
 #define em_proto_TrackingMessage_DEFAULT NULL
 #define em_proto_TrackingMessage_P_localSpace_viewSpace_MSGTYPE em_proto_Pose

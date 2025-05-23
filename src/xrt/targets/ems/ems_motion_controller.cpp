@@ -93,9 +93,10 @@ controller_update_inputs(struct xrt_device *xdev)
         return XRT_SUCCESS;
     }
 
-    for (uint32_t i = 0; i < xdev->input_count; i++) {
-        xdev->inputs[i].active = true;
-        xdev->inputs[i].timestamp = now;
+    if (emc->hand_grab > 0.5) {
+        xdev->inputs[0].active = true;
+        xdev->inputs[0].timestamp = now;
+        xdev->inputs[0].value.vec1 = {emc->hand_grab};
     }
 
     return XRT_SUCCESS;
@@ -210,6 +211,7 @@ controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *mes
     }
 
     xrt_pose pose = {};
+    float hand_grab = 0;
 
     if (emc->base.device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {
         if (!message->tracking.has_controller_grip_left) {
@@ -227,6 +229,8 @@ controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *mes
 
         memcpy(emc->hand_joints, messageSuper->hand_joint_locations_left,
                sizeof(em_proto_HandJointLocation) * 26);
+
+        hand_grab = message->tracking.controller_grip_value_left;
     } else if (emc->base.device_type == XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER) {
         if (!message->tracking.has_controller_grip_right) {
             return;
@@ -243,6 +247,8 @@ controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *mes
 
         memcpy(emc->hand_joints, messageSuper->hand_joint_locations_right,
                sizeof(em_proto_HandJointLocation) * 26);
+
+        hand_grab = message->tracking.controller_grip_value_right;
     } else {
         return;
     }
@@ -253,6 +259,8 @@ controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *mes
 
     emc->active = true;
     emc->pose = pose;
+    emc->hand_grab = hand_grab;
+    printf("hand grab %f", hand_grab);
 }
 
 
