@@ -207,8 +207,9 @@ ems_signaling_server_init(EmsSignalingServer *server)
 
 	soup_server_listen_all(server->soup_server, EMS_DEFAULT_PORT, 0, &error);
 	g_assert_no_error(error);
-}
 
+    U_LOG_W("Websocket listening on port: %d", EMS_DEFAULT_PORT);
+}
 
 static void
 ems_signaling_server_send_to_websocket_client(EmsSignalingServer *server, EmsClientId client_id, JsonNode *msg)
