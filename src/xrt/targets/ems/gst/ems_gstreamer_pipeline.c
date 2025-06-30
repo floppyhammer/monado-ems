@@ -36,8 +36,10 @@
 #include <gst/gststructure.h>
 
 #define GST_USE_UNSTABLE_API
+
 #include <gst/webrtc/datachannel.h>
 #include <gst/webrtc/rtcsessiondescription.h>
+
 #undef GST_USE_UNSTABLE_API
 
 #include <stdio.h>
@@ -45,12 +47,9 @@
 
 #define WEBRTC_TEE_NAME "webrtctee"
 
-#define EM_USE_ENCODEBIN
-
 EmsSignalingServer *signaling_server = NULL;
 
-struct ems_gstreamer_pipeline
-{
+struct ems_gstreamer_pipeline {
     struct gstreamer_pipeline base;
 
     // struct GstElement *pipeline;
@@ -63,16 +62,14 @@ struct ems_gstreamer_pipeline
 };
 
 static gboolean
-sigint_handler(gpointer user_data)
-{
+sigint_handler(gpointer user_data) {
     g_main_loop_quit(user_data);
     return G_SOURCE_REMOVE;
 }
 
 static gboolean
-gst_bus_cb(GstBus *bus, GstMessage *message, gpointer user_data)
-{
-    struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *)user_data;
+gst_bus_cb(GstBus *bus, GstMessage *message, gpointer user_data) {
+    struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *) user_data;
     GstBin *pipeline = GST_BIN(egp->base.pipeline);
 
     switch (GST_MESSAGE_TYPE(message)) {
@@ -84,7 +81,8 @@ gst_bus_cb(GstBus *bus, GstMessage *message, gpointer user_data)
             g_error("Error: %s (%s)", gerr->message, debug_msg);
             g_error_free(gerr);
             g_free(debug_msg);
-        } break;
+        }
+            break;
         case GST_MESSAGE_WARNING: {
             GError *gerr;
             gchar *debug_msg;
@@ -93,18 +91,20 @@ gst_bus_cb(GstBus *bus, GstMessage *message, gpointer user_data)
             g_warning("Warning: %s (%s)", gerr->message, debug_msg);
             g_error_free(gerr);
             g_free(debug_msg);
-        } break;
+        }
+            break;
         case GST_MESSAGE_EOS: {
             g_error("Got EOS!!");
-        } break;
-        default: break;
+        }
+            break;
+        default:
+            break;
     }
     return TRUE;
 }
 
 static GstElement *
-get_webrtcbin_for_client(GstBin *pipeline, EmsClientId client_id)
-{
+get_webrtcbin_for_client(GstBin *pipeline, EmsClientId client_id) {
     gchar *name;
     GstElement *webrtcbin;
 
@@ -116,8 +116,7 @@ get_webrtcbin_for_client(GstBin *pipeline, EmsClientId client_id)
 }
 
 static void
-connect_webrtc_to_tee(GstElement *webrtcbin)
-{
+connect_webrtc_to_tee(GstElement *webrtcbin) {
     GstElement *pipeline = GST_ELEMENT(gst_element_get_parent(webrtcbin));
     if (pipeline == NULL) {
         return;
@@ -130,7 +129,7 @@ connect_webrtc_to_tee(GstElement *webrtcbin)
 
     GstCaps *caps = gst_caps_from_string(
             "application/x-rtp, "
-            "payload=96,encoding-name=H264,clock-rate=90000,media=video,packetization-mode=(string)1,profile-level-id=("
+            "payload=96,encoding-name=H265,clock-rate=90000,media=video,packetization-mode=(string)1,profile-level-id=("
             "string)42e01f");
 
     GstPad *sink_pad = gst_element_request_pad(webrtcbin, pad_template, "sink_0", caps);
@@ -155,8 +154,7 @@ connect_webrtc_to_tee(GstElement *webrtcbin)
 }
 
 static void
-on_offer_created(GstPromise *promise, GstElement *webrtcbin)
-{
+on_offer_created(GstPromise *promise, GstElement *webrtcbin) {
     GstWebRTCSessionDescription *offer = NULL;
     gchar *sdp;
 
@@ -173,27 +171,23 @@ on_offer_created(GstPromise *promise, GstElement *webrtcbin)
 }
 
 static void
-webrtc_on_data_channel_cb(GstElement *webrtcbin, GObject *data_channel, struct ems_gstreamer_pipeline *egp)
-{
+webrtc_on_data_channel_cb(GstElement *webrtcbin, GObject *data_channel, struct ems_gstreamer_pipeline *egp) {
     U_LOG_I("webrtc_on_data_channel_cb called");
 }
 
 static void
-webrtc_on_ice_candidate_cb(GstElement *webrtcbin, guint mlineindex, gchar *candidate)
-{
+webrtc_on_ice_candidate_cb(GstElement *webrtcbin, guint mlineindex, gchar *candidate) {
     ems_signaling_server_send_candidate(signaling_server, g_object_get_data(G_OBJECT(webrtcbin), "client_id"),
                                         mlineindex, candidate);
 }
 
 static void
-data_channel_error_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp)
-{
+data_channel_error_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp) {
     U_LOG_E("error");
 }
 
 gboolean
-datachannel_send_message(GstWebRTCDataChannel *datachannel)
-{
+datachannel_send_message(GstWebRTCDataChannel *datachannel) {
     g_signal_emit_by_name(datachannel, "send-string", "Hi! from Electric Maple Server");
 
     char buf[] = "Electric Maple Server";
@@ -204,16 +198,14 @@ datachannel_send_message(GstWebRTCDataChannel *datachannel)
 }
 
 static void
-data_channel_open_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp)
-{
+data_channel_open_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp) {
     U_LOG_I("data channel opened");
 
     egp->timeout_src_id = g_timeout_add_seconds(3, G_SOURCE_FUNC(datachannel_send_message), datachannel);
 }
 
 static void
-data_channel_close_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp)
-{
+data_channel_close_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp) {
     U_LOG_I("data channel closed");
 
     g_clear_handle_id(&egp->timeout_src_id, g_source_remove);
@@ -221,19 +213,18 @@ data_channel_close_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pi
 }
 
 bool
-ProtoMessage_decode_hand_joint_locations(pb_istream_t *istream, const pb_field_t *field, void **arg)
-{
+ProtoMessage_decode_hand_joint_locations(pb_istream_t *istream, const pb_field_t *field, void **arg) {
     em_proto_HandJointLocation *dest = *arg;
 
     em_proto_HandJointLocation location;
 
-    if (!pb_decode(istream, (pb_msgdesc_t *)em_proto_HandJointLocation_fields, &location)) {
+    if (!pb_decode(istream, (pb_msgdesc_t *) em_proto_HandJointLocation_fields, &location)) {
         const char *error = PB_GET_ERROR(istream);
         U_LOG_E("decode error: %s\n", error);
         return false;
     }
 
-    dest[(int)location.index] = location;
+    dest[(int) location.index] = location;
 
     // U_LOG_E("Down %d %d %f %f %f", (int)location.index, location.has_pose, location.pose.position.x, location.pose.position.y,
     //         location.pose.position.z);
@@ -242,8 +233,7 @@ ProtoMessage_decode_hand_joint_locations(pb_istream_t *istream, const pb_field_t
 }
 
 static void
-data_channel_message_data_cb(GstWebRTCDataChannel *datachannel, GBytes *data, struct ems_gstreamer_pipeline *egp)
-{
+data_channel_message_data_cb(GstWebRTCDataChannel *datachannel, GBytes *data, struct ems_gstreamer_pipeline *egp) {
     UpMessageSuper message_super = {};
     em_proto_UpMessage message = em_proto_UpMessage_init_default;
 
@@ -272,14 +262,12 @@ data_channel_message_data_cb(GstWebRTCDataChannel *datachannel, GBytes *data, st
 }
 
 static void
-data_channel_message_string_cb(GstWebRTCDataChannel *datachannel, gchar *str, struct ems_gstreamer_pipeline *egp)
-{
+data_channel_message_string_cb(GstWebRTCDataChannel *datachannel, gchar *str, struct ems_gstreamer_pipeline *egp) {
     U_LOG_I("Received data channel message: %s\n", str);
 }
 
 static void
-webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, struct ems_gstreamer_pipeline *egp)
-{
+webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, struct ems_gstreamer_pipeline *egp) {
     GstBin *pipeline = GST_BIN(egp->base.pipeline);
     gchar *name;
     GstElement *webrtcbin;
@@ -324,7 +312,7 @@ webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, st
 
     connect_webrtc_to_tee(webrtcbin);
 
-    GstPromise *promise = gst_promise_new_with_change_func((GstPromiseChangeFunc)on_offer_created, webrtcbin, NULL);
+    GstPromise *promise = gst_promise_new_with_change_func((GstPromiseChangeFunc) on_offer_created, webrtcbin, NULL);
     g_signal_emit_by_name(webrtcbin, "create-offer", NULL, promise);
 
     GST_DEBUG_BIN_TO_DOT_FILE(pipeline, GST_DEBUG_GRAPH_SHOW_ALL, "rtcbin");
@@ -339,8 +327,7 @@ static void
 webrtc_sdp_answer_cb(EmsSignalingServer *server,
                      EmsClientId client_id,
                      const gchar *sdp,
-                     struct ems_gstreamer_pipeline *egp)
-{
+                     struct ems_gstreamer_pipeline *egp) {
     GstBin *pipeline = GST_BIN(egp->base.pipeline);
     GstSDPMessage *sdp_msg = NULL;
     GstWebRTCSessionDescription *desc = NULL;
@@ -380,8 +367,7 @@ webrtc_candidate_cb(EmsSignalingServer *server,
                     EmsClientId client_id,
                     guint mlineindex,
                     const gchar *candidate,
-                    struct ems_gstreamer_pipeline *egp)
-{
+                    struct ems_gstreamer_pipeline *egp) {
     GstBin *pipeline = GST_BIN(egp->base.pipeline);
 
     if (strlen(candidate)) {
@@ -398,8 +384,7 @@ webrtc_candidate_cb(EmsSignalingServer *server,
 }
 
 static GstPadProbeReturn
-remove_webrtcbin_probe_cb(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
-{
+remove_webrtcbin_probe_cb(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
     GstElement *webrtcbin = GST_ELEMENT(user_data);
 
     // // Secondly, send an EOS event
@@ -417,8 +402,7 @@ remove_webrtcbin_probe_cb(GstPad *pad, GstPadProbeInfo *info, gpointer user_data
 }
 
 static void
-webrtc_client_disconnected_cb(EmsSignalingServer *server, EmsClientId client_id, struct ems_gstreamer_pipeline *egp)
-{
+webrtc_client_disconnected_cb(EmsSignalingServer *server, EmsClientId client_id, struct ems_gstreamer_pipeline *egp) {
     GstBin *pipeline = GST_BIN(egp->base.pipeline);
     GstElement *webrtcbin;
 
@@ -438,15 +422,13 @@ webrtc_client_disconnected_cb(EmsSignalingServer *server, EmsClientId client_id,
     }
 }
 
-struct RestartData
-{
+struct RestartData {
     GstElement *src;
     GstElement *pipeline;
 };
 
 static void
-free_restart_data(gpointer user_data)
-{
+free_restart_data(gpointer user_data) {
     struct RestartData *rd = user_data;
 
     gst_object_unref(rd->src);
@@ -454,8 +436,7 @@ free_restart_data(gpointer user_data)
 }
 
 static gboolean
-restart_source(gpointer user_data)
-{
+restart_source(gpointer user_data) {
     struct RestartData *rd = user_data;
     GstElement *e;
     GstStateChangeReturn ret;
@@ -477,8 +458,7 @@ restart_source(gpointer user_data)
 }
 
 static GstPadProbeReturn
-src_event_cb(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
-{
+src_event_cb(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
     GstElement *pipeline = user_data;
     GstElement *src;
     struct RestartData *rd;
@@ -490,7 +470,8 @@ src_event_cb(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
 
     gst_bin_remove(GST_BIN(pipeline), src);
 
-    rd = g_new(struct RestartData, 1);
+    rd = g_new(
+            struct RestartData, 1);
     rd->src = src;
     rd->pipeline = pipeline;
     g_idle_add_full(G_PRIORITY_HIGH_IDLE, restart_source, rd, free_restart_data);
@@ -499,8 +480,7 @@ src_event_cb(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
 }
 
 static gboolean
-print_stats(gpointer user_data)
-{
+print_stats(gpointer user_data) {
     GstElement *src = user_data;
     GstStructure *s;
     char *str;
@@ -522,8 +502,7 @@ print_stats(gpointer user_data)
  */
 
 static void
-break_apart(struct xrt_frame_node *node)
-{
+break_apart(struct xrt_frame_node *node) {
     struct gstreamer_pipeline *gp = container_of(node, struct gstreamer_pipeline, node);
 
     /*
@@ -534,12 +513,11 @@ break_apart(struct xrt_frame_node *node)
      * objects it will call destroy on them.
      */
 
-    (void)gp;
+    (void) gp;
 }
 
 static void
-destroy(struct xrt_frame_node *node)
-{
+destroy(struct xrt_frame_node *node) {
     struct gstreamer_pipeline *gp = container_of(node, struct gstreamer_pipeline, node);
 
     /*
@@ -553,8 +531,7 @@ destroy(struct xrt_frame_node *node)
 GMainLoop *main_loop;
 
 void *
-loop_thread(void *data)
-{
+loop_thread(void *data) {
     g_main_loop_run(main_loop);
     return NULL;
 }
@@ -567,10 +544,9 @@ loop_thread(void *data)
  */
 
 void
-ems_gstreamer_pipeline_play(struct gstreamer_pipeline *gp)
-{
+ems_gstreamer_pipeline_play(struct gstreamer_pipeline *gp) {
     U_LOG_I("Starting pipeline");
-    struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *)gp;
+    struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *) gp;
 
     main_loop = g_main_loop_new(NULL, FALSE);
 
@@ -586,9 +562,8 @@ ems_gstreamer_pipeline_play(struct gstreamer_pipeline *gp)
 }
 
 void
-ems_gstreamer_pipeline_stop(struct gstreamer_pipeline *gp)
-{
-    struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *)gp;
+ems_gstreamer_pipeline_stop(struct gstreamer_pipeline *gp) {
+    struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *) gp;
     U_LOG_I("Stopping pipeline");
 
     // Settle the pipeline.
@@ -601,7 +576,7 @@ ems_gstreamer_pipeline_stop(struct gstreamer_pipeline *gp)
     msg = gst_bus_timed_pop_filtered(GST_ELEMENT_BUS(egp->base.pipeline), GST_CLOCK_TIME_NONE,
                                      GST_MESSAGE_EOS | GST_MESSAGE_ERROR);
     //! @todo Should check if we got an error message here or an eos.
-    (void)msg;
+    (void) msg;
 
     // Completely stop the pipeline.
     U_LOG_T("Setting to NULL");
@@ -616,8 +591,7 @@ gstAndroidLog(GstDebugCategory *category,
               gint line,
               GObject *object,
               GstDebugMessage *message,
-              gpointer data)
-{
+              gpointer data) {
     if (level <= gst_debug_category_get_threshold(category)) {
         if (level == GST_LEVEL_ERROR) {
             U_LOG_IFL_E(U_LOGGING_ERROR, "%s, %s: %s", file, function, gst_debug_message_get(message));
@@ -631,8 +605,7 @@ void
 ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
                               const char *appsrc_name,
                               struct ems_callbacks *callbacks_collection,
-                              struct gstreamer_pipeline **out_gp)
-{
+                              struct gstreamer_pipeline **out_gp) {
     gchar *pipeline_str;
     GstElement *pipeline;
     GError *error = NULL;
@@ -646,23 +619,18 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
     signaling_server = ems_signaling_server_new();
 
     pipeline_str = g_strdup_printf(
-            "appsrc name=%s ! " //
-            "queue ! "          //
+            "appsrc name=%s ! identity check-imperfect-timestamp=true ! " //
+            //            "queue ! "          //
             "videoconvert ! "   //
             "videorate ! "
-            "videoscale ! "
+            //            "videoscale ! "
             "video/x-raw,format=NV12,framerate=60/1 ! " //
-            "queue !"                                   //
-            #ifdef EM_USE_ENCODEBIN
-            "encodebin2 profile=\"video/x-h264|element-properties,tune=zerolatency,bitrate=80000000\" ! "
-            #else
-            "x264enc tune=zerolatency bitrate=8192 key-int-max=60 ! " //
-	    "video/x-h264,profile=baseline ! "                        //
-            #endif
-            "queue !"                         //
-            "h264parse ! "                    //
-            "rtph264pay config-interval=1 ! " //
-            "application/x-rtp,payload=96 ! " //
+            //            "queue !"                                   //
+            "encodebin2 profile=\"video/x-h265|element-properties,tune=zerolatency,bitrate=40960000\" ! "
+            //            "queue !"                         //
+            "h265parse ! "                    //
+            "rtph265pay config-interval=-1 aggregate-mode=zero-latency ! " //
+            "application/x-rtp,media=video,encoding-name=H265,payload=96 ! " //
             "tee name=%s allow-not-linked=true",
             appsrc_name, WEBRTC_TEE_NAME);
 
@@ -703,7 +671,7 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 
     g_print(
             "Output streams:\n"
-            "\tWebRTC: http://127.0.0.1:8080\n");
+            "\tWebRTC: http://127.0.0.1:%d\n", EMS_DEFAULT_PORT);
 
     // Setup pipeline.
     egp->base.pipeline = pipeline;
@@ -723,8 +691,7 @@ ems_gstreamer_pipeline_create(struct xrt_frame_context *xfctx,
 }
 
 void
-ems_gstreamer_pipeline_dump(struct gstreamer_pipeline *gp)
-{
+ems_gstreamer_pipeline_dump(struct gstreamer_pipeline *gp) {
     gchar *data = gst_debug_bin_to_dot_data(GST_BIN(gp->pipeline), GST_DEBUG_GRAPH_SHOW_ALL);
     g_free(data);
 }
