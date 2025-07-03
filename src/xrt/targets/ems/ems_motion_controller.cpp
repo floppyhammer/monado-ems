@@ -13,34 +13,27 @@
  * @ingroup drv_ems
  */
 
-#include "xrt/xrt_device.h"
-
-#include "os/os_time.h"
-
-#include "math/m_api.h"
-#include "math/m_mathinclude.h"
-
-#include "util/u_var.h"
-#include "util/u_misc.h"
-#include "util/u_time.h"
-#include "util/u_debug.h"
-#include "util/u_device.h"
-#include "util/u_logging.h"
-#include "util/u_distortion_mesh.h"
+#include <cassert>
+#include <cstdio>
+#include <thread>
 
 #include "electricmaple.pb.h"
 #include "ems_callbacks.h"
-#include "pb_decode.h"
-
 #include "ems_server_internal.h"
+#include "math/m_api.h"
+#include "math/m_mathinclude.h"
 #include "math/m_space.h"
+#include "os/os_time.h"
+#include "pb_decode.h"
+#include "util/u_debug.h"
+#include "util/u_device.h"
+#include "util/u_distortion_mesh.h"
 #include "util/u_hand_simulation.h"
-
-#include <thread>
-
-#include <cstdio>
-#include <cassert>
-
+#include "util/u_logging.h"
+#include "util/u_misc.h"
+#include "util/u_time.h"
+#include "util/u_var.h"
+#include "xrt/xrt_device.h"
 
 /*
  *
@@ -48,11 +41,8 @@
  *
  */
 
-
 /// Casting helper function
-static inline struct ems_motion_controller *
-ems_motion_controller(struct xrt_device *xdev)
-{
+static inline struct ems_motion_controller *ems_motion_controller(struct xrt_device *xdev) {
     return (struct ems_motion_controller *)xdev;
 }
 
@@ -62,9 +52,7 @@ DEBUG_GET_ONCE_LOG_OPTION(sample_log, "EMS_LOG", U_LOGGING_WARN)
 #define EMS_DEBUG(p, ...) U_LOG_XDEV_IFL_D(&p->base, p->log_level, __VA_ARGS__)
 #define EMS_ERROR(p, ...) U_LOG_XDEV_IFL_E(&p->base, p->log_level, __VA_ARGS__)
 
-static void
-controller_destroy(struct xrt_device *xdev)
-{
+static void controller_destroy(struct xrt_device *xdev) {
     struct ems_motion_controller *emc = ems_motion_controller(xdev);
 
     // Remove the variable tracking.
@@ -77,9 +65,7 @@ controller_destroy(struct xrt_device *xdev)
 }
 
 // You should put code to update the attached input fields (if any)
-static xrt_result_t
-controller_update_inputs(struct xrt_device *xdev)
-{
+static xrt_result_t controller_update_inputs(struct xrt_device *xdev) {
     struct ems_motion_controller *emc = ems_motion_controller(xdev);
 
     uint64_t now = os_monotonic_get_ns();
@@ -93,28 +79,24 @@ controller_update_inputs(struct xrt_device *xdev)
         return XRT_SUCCESS;
     }
 
-    if (emc->hand_grab > 0.5) {
-        xdev->inputs[0].active = true;
-        xdev->inputs[0].timestamp = now;
-        xdev->inputs[0].value.vec1 = {emc->hand_grab};
-    }
+    xdev->inputs[0].active = true;
+    xdev->inputs[0].timestamp = now;
+    xdev->inputs[0].value.vec1 = {emc->hand_grab};
 
     return XRT_SUCCESS;
 }
 
-static void
-controller_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
-{
+static void controller_set_output(struct xrt_device *xdev,
+                                  enum xrt_output_name name,
+                                  const union xrt_output_value *value) {
     // Since we don't have a data channel yet, this is a no-op.
 }
 
-static void
-controller_get_hand_tracking(struct xrt_device *xdev,
-                             enum xrt_input_name name,
-                             int64_t requested_timestamp_ns,
-                             struct xrt_hand_joint_set *out_value,
-                             int64_t *out_timestamp_ns)
-{
+static void controller_get_hand_tracking(struct xrt_device *xdev,
+                                         enum xrt_input_name name,
+                                         int64_t requested_timestamp_ns,
+                                         struct xrt_hand_joint_set *out_value,
+                                         int64_t *out_timestamp_ns) {
     struct ems_motion_controller *emc = ems_motion_controller(xdev);
 
     if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT && name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
@@ -124,7 +106,7 @@ controller_get_hand_tracking(struct xrt_device *xdev,
 
     // Get the pose of the hand.
     struct xrt_space_relation relation;
-    xrt_device_get_tracked_pose(xdev, XRT_INPUT_INDEX_GRIP_POSE, requested_timestamp_ns, &relation);
+    xrt_device_get_tracked_pose(xdev, XRT_INPUT_WMR_GRIP_POSE, requested_timestamp_ns, &relation);
 
     out_value->hand_pose.pose = emc->pose;
     m_space_relation_ident(&out_value->hand_pose);
@@ -144,29 +126,27 @@ controller_get_hand_tracking(struct xrt_device *xdev,
 
         out_value->values.hand_joint_set_default[i].radius = emc->hand_joints[i].radius;
 
-        out_value->values.hand_joint_set_default[i].relation.relation_flags =
-                (enum xrt_space_relation_flags)(                 //
-                        XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |   //
-                        XRT_SPACE_RELATION_POSITION_VALID_BIT |      //
-                        XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | //
-                        XRT_SPACE_RELATION_POSITION_TRACKED_BIT);    //
+        out_value->values.hand_joint_set_default[i].relation.relation_flags = (enum xrt_space_relation_flags)( //
+                XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |                                                         //
+                XRT_SPACE_RELATION_POSITION_VALID_BIT |                                                            //
+                XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |                                                       //
+                XRT_SPACE_RELATION_POSITION_TRACKED_BIT);                                                          //
     }
 
     // This is a lie
     *out_timestamp_ns = requested_timestamp_ns;
 }
 
-static xrt_result_t
-controller_get_tracked_pose(struct xrt_device *xdev,
-                            enum xrt_input_name name,
-                            int64_t at_timestamp_ns,
-                            struct xrt_space_relation *out_relation)
-{
+static xrt_result_t controller_get_tracked_pose(struct xrt_device *xdev,
+                                                enum xrt_input_name name,
+                                                int64_t at_timestamp_ns,
+                                                struct xrt_space_relation *out_relation) {
     struct ems_motion_controller *emc = ems_motion_controller(xdev);
 
     switch (name) {
-        case XRT_INPUT_INDEX_GRIP_POSE:
-        case XRT_INPUT_INDEX_AIM_POSE: break;
+        case XRT_INPUT_WMR_GRIP_POSE:
+        case XRT_INPUT_WMR_AIM_POSE:
+            break;
         default: {
             EMS_ERROR(emc, "unknown input name: %d", name);
             return XRT_ERROR_INPUT_UNSUPPORTED;
@@ -185,22 +165,18 @@ controller_get_tracked_pose(struct xrt_device *xdev,
     return XRT_SUCCESS;
 }
 
-static void
-controller_get_view_poses(struct xrt_device *xdev,
-                          const struct xrt_vec3 *default_eye_relation,
-                          int64_t at_timestamp_ns,
-                          uint32_t view_count,
-                          struct xrt_space_relation *out_head_relation,
-                          struct xrt_fov *out_fovs,
-                          struct xrt_pose *out_poses)
-{
+static void controller_get_view_poses(struct xrt_device *xdev,
+                                      const struct xrt_vec3 *default_eye_relation,
+                                      int64_t at_timestamp_ns,
+                                      uint32_t view_count,
+                                      struct xrt_space_relation *out_head_relation,
+                                      struct xrt_fov *out_fovs,
+                                      struct xrt_pose *out_poses) {
     assert(false);
 }
 
 /// Fetch remote input data.
-static void
-controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *messageSuper, void *userdata)
-{
+static void controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *messageSuper, void *userdata) {
     auto *emc = (struct ems_motion_controller *)userdata;
     emc->active = false;
 
@@ -227,8 +203,7 @@ controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *mes
         pose.orientation.y = message->tracking.controller_grip_left.orientation.y;
         pose.orientation.z = message->tracking.controller_grip_left.orientation.z;
 
-        memcpy(emc->hand_joints, messageSuper->hand_joint_locations_left,
-               sizeof(em_proto_HandJointLocation) * 26);
+        memcpy(emc->hand_joints, messageSuper->hand_joint_locations_left, sizeof(em_proto_HandJointLocation) * 26);
 
         hand_grab = message->tracking.controller_grip_value_left;
     } else if (emc->base.device_type == XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER) {
@@ -245,8 +220,7 @@ controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *mes
         pose.orientation.y = message->tracking.controller_grip_right.orientation.y;
         pose.orientation.z = message->tracking.controller_grip_right.orientation.z;
 
-        memcpy(emc->hand_joints, messageSuper->hand_joint_locations_right,
-               sizeof(em_proto_HandJointLocation) * 26);
+        memcpy(emc->hand_joints, messageSuper->hand_joint_locations_right, sizeof(em_proto_HandJointLocation) * 26);
 
         hand_grab = message->tracking.controller_grip_value_right;
     } else {
@@ -260,9 +234,8 @@ controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *mes
     emc->active = true;
     emc->pose = pose;
     emc->hand_grab = hand_grab;
-    printf("hand grab %f", hand_grab);
+    // printf("hand grab %f\n", hand_grab);
 }
-
 
 /*
  *
@@ -271,14 +244,14 @@ controller_handle_data(enum ems_callbacks_event event, const UpMessageSuper *mes
  */
 
 static struct xrt_binding_input_pair simple_inputs_index[4] = {
-        {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_INDEX_TRIGGER_VALUE},
-        {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_INDEX_B_CLICK},
-        {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_INDEX_GRIP_POSE},
-        {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_INDEX_AIM_POSE},
+        {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_WMR_TRIGGER_VALUE},
+        {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_WMR_MENU_CLICK},
+        {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_WMR_GRIP_POSE},
+        {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_WMR_AIM_POSE},
 };
 
 static struct xrt_binding_output_pair simple_outputs_index[1] = {
-        {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_INDEX_HAPTIC},
+        {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_WMR_HAPTIC},
 };
 
 static struct xrt_binding_profile binding_profiles_index[1] = {
@@ -291,16 +264,15 @@ static struct xrt_binding_profile binding_profiles_index[1] = {
         },
 };
 
-
 /*
  *
  * 'Exported' functions.
  *
  */
 
-struct ems_motion_controller *
-ems_motion_controller_create(ems_instance &emsi, enum xrt_device_name device_name, enum xrt_device_type device_type)
-{
+struct ems_motion_controller *ems_motion_controller_create(ems_instance &emsi,
+                                                           enum xrt_device_name device_name,
+                                                           enum xrt_device_type device_type) {
     uint32_t input_count;
     uint32_t output_count;
 
@@ -309,7 +281,9 @@ ems_motion_controller_create(ems_instance &emsi, enum xrt_device_name device_nam
             input_count = ARRAY_SIZE(simple_inputs_index) + 1; // ARRAY_SIZE + hand tracker
             output_count = ARRAY_SIZE(simple_outputs_index);
             break;
-        default: U_LOG_E("Device name not supported!"); return nullptr;
+        default:
+            U_LOG_E("Device name not supported!");
+            return nullptr;
     }
 
     const char *hand_str = nullptr;
@@ -323,7 +297,9 @@ ems_motion_controller_create(ems_instance &emsi, enum xrt_device_name device_nam
             hand_str = "Left";
             default_pose = (xrt_pose){XRT_QUAT_IDENTITY, {-0.2f, 1.4f, -0.4f}};
             break;
-        default: U_LOG_E("Device type not supported!"); return nullptr;
+        default:
+            U_LOG_E("Device type not supported!");
+            return nullptr;
     }
 
     // We don't need anything special from allocate except inputs and outputs.
@@ -342,8 +318,8 @@ ems_motion_controller_create(ems_instance &emsi, enum xrt_device_name device_nam
 
     // Data.
     emc->base.tracking_origin = &emsi.tracking_origin;
-    // emc->base.binding_profiles = binding_profiles_index;
-    // emc->base.binding_profile_count = ARRAY_SIZE(binding_profiles_index);
+    emc->base.binding_profiles = binding_profiles_index;
+    emc->base.binding_profile_count = ARRAY_SIZE(binding_profiles_index);
     emc->base.orientation_tracking_supported = true;
     emc->base.position_tracking_supported = true;
     emc->base.name = device_name;
@@ -362,19 +338,20 @@ ems_motion_controller_create(ems_instance &emsi, enum xrt_device_name device_nam
     // Setup input.
     switch (device_name) {
         case XRT_DEVICE_SIMPLE_CONTROLLER:
-            emc->base.inputs[0].name = XRT_INPUT_INDEX_TRIGGER_VALUE;
-            emc->base.inputs[1].name = XRT_INPUT_INDEX_B_CLICK;
-            emc->base.inputs[2].name = XRT_INPUT_INDEX_GRIP_POSE;
-            emc->base.inputs[3].name = XRT_INPUT_INDEX_AIM_POSE;
+            emc->base.inputs[0].name = XRT_INPUT_WMR_TRIGGER_VALUE;
+            emc->base.inputs[1].name = XRT_INPUT_WMR_MENU_CLICK;
+            emc->base.inputs[2].name = XRT_INPUT_WMR_GRIP_POSE;
+            emc->base.inputs[3].name = XRT_INPUT_WMR_AIM_POSE;
             if (device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {
                 emc->base.inputs[4].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
             } else {
                 emc->base.inputs[4].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
             }
 
-            emc->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
+            emc->base.outputs[0].name = XRT_OUTPUT_NAME_WMR_HAPTIC;
             break;
-        default: assert(false);
+        default:
+            assert(false);
     }
 
     ems_callbacks_add(emsi.callbacks, EMS_CALLBACKS_EVENT_CONTROLLER, controller_handle_data, emc);
